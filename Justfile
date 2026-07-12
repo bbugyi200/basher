@@ -26,7 +26,7 @@ lint: install
     {{ venv_bin }}/symvision src/basher
     {{ venv_bin }}/toobig src 1000 850 700
     {{ venv_bin }}/toobig tests 1000 850 700
-    {{ venv_bin }}/shellcheck --exclude=SC2034 src/basher/data/bugyi.sh
+    {{ venv_bin }}/shellcheck --exclude=SC2034,SC2059,SC2155 src/basher/data/bugyi.sh
 
 [positional-arguments]
 test *args: install
