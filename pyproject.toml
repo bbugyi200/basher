@@ -1,0 +1,85 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "basher"
+version = "0.1.0"
+description = "Vendor shell scripts and the bugyi.sh library"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Bryan Bugyi" }]
+maintainers = [{ name = "Bryan Bugyi" }]
+keywords = ["bash", "shell", "vendoring", "developer-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Build Tools",
+    "Typing :: Typed",
+]
+dependencies = ["rich"]
+
+[project.urls]
+Homepage = "https://github.com/bbugyi200/basher"
+Repository = "https://github.com/bbugyi200/basher"
+Issues = "https://github.com/bbugyi200/basher/issues"
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "shellcheck-py",
+    "symvision",
+    "toobig",
+    "twine",
+]
+
+[project.scripts]
+basher = "basher.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/basher"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["B", "C4", "E", "F", "UP", "W"]
+
+[tool.mypy]
+files = ["src"]
+mypy_path = ["src"]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-config", "--strict-markers"]
+
+[tool.coverage.run]
+source_pkgs = ["basher"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+]
+
