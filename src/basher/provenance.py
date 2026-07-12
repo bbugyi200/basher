@@ -20,7 +20,7 @@ _LEGACY_PATTERN = re.compile(
 
 
 @dataclass(frozen=True, slots=True)
-class _Provenance:
+class Provenance:
     """Parsed provenance attached to a vendored artifact."""
 
     source: str
@@ -49,25 +49,37 @@ def insert_provenance(content: str, provenance: str) -> str:
     return "".join(lines)
 
 
-def parse_provenance(content: str) -> _Provenance | None:
+def parse_provenance(content: str) -> Provenance | None:
     """Parse basher v2 or legacy pyvendor provenance from file content."""
     for line in content.splitlines()[:5]:
         match = _BASHER_PATTERN.fullmatch(line)
         if match:
-            return _Provenance(
+            return Provenance(
                 source=match.group("source"),
                 vendored_on=date.fromisoformat(match.group("date")),
                 version=match.group("version"),
             )
         legacy_match = _LEGACY_PATTERN.fullmatch(line)
         if legacy_match:
-            return _Provenance(
+            return Provenance(
                 source="https://github.com/bbugyi200/dotfiles",
                 vendored_on=date.fromisoformat(legacy_match.group("date")),
                 version=None,
                 legacy=True,
             )
     return None
+
+
+def remove_provenance(content: str) -> str:
+    """Remove a recognized provenance line while preserving all other text."""
+    lines = content.splitlines(keepends=True)
+    for index, line in enumerate(lines[:5]):
+        if _BASHER_PATTERN.fullmatch(line.rstrip("\r\n")) or _LEGACY_PATTERN.fullmatch(
+            line.rstrip("\r\n")
+        ):
+            del lines[index]
+            break
+    return "".join(lines)
 
 
 def display_source(path: Path) -> str:

@@ -1,0 +1,112 @@
+name: Publish
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  build:
+    needs: release
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Build package
+        run: uv build
+      - name: Validate package metadata
+        run: uvx --from twine twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  install-smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install the wheel in a fresh environment
+        run: |
+          uv venv --python 3.12 /tmp/basher-smoke
+          uv pip install --python /tmp/basher-smoke/bin/python dist/*.whl
+      - name: Exercise the installed CLI
+        run: |
+          set -euo pipefail
+
+          basher=/tmp/basher-smoke/bin/basher
+          "${basher}" --version
+          "${basher}" cat | bash -n
+
+          fixture="$(mktemp -d)"
+          mkdir -p "${fixture}/project"
+          printf '#!/bin/bash\nsource ~/lib/bugyi.sh\nlog::info smoke\n' > "${fixture}/smoke"
+          chmod +x "${fixture}/smoke"
+
+          "${basher}" vendor "${fixture}/smoke" "${fixture}/project"
+          test -x "${fixture}/project/tools/smoke-$(date +%y%m%d)"
+          test "$(find "${fixture}/project/lib" -name 'bugyi-*.sh' -type f | wc -l)" -eq 1
+          "${basher}" status "${fixture}/project"
+
+          printf '# changed\n' >> "${fixture}/smoke"
+          exit_code=0
+          "${basher}" status "${fixture}/project" >/dev/null || exit_code=$?
+          test "${exit_code}" -eq 3
+
+          exit_code=0
+          "${basher}" vendor "${fixture}/missing" "${fixture}/project" >/dev/null 2>&1 || exit_code=$?
+          test "${exit_code}" -eq 1
+
+          exit_code=0
+          "${basher}" vendor >/dev/null 2>&1 || exit_code=$?
+          test "${exit_code}" -eq 2
+
+  publish:
+    needs: [release, build, install-smoke]
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

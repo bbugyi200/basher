@@ -70,7 +70,13 @@ strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = ["--strict-config", "--strict-markers"]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+    "--cov=basher",
+    "--cov-report=term-missing",
+    "--cov-fail-under=95",
+]
 
 [tool.coverage.run]
 source_pkgs = ["basher"]
@@ -82,4 +88,3 @@ exclude_lines = [
     "if __name__ == .__main__.",
     "if TYPE_CHECKING:",
 ]
-
