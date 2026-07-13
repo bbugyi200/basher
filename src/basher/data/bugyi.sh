@@ -8,7 +8,7 @@ export TZ="America/New_York"
 ################################################
 if [[ "${BUGYI_HAS_BEEN_SOURCED}" != true ]]; then
   readonly BUGYI_HAS_BEEN_SOURCED=true
-  readonly BUGYI_VERSION="0.1.0"  # x-release-please-version
+  readonly BUGYI_VERSION="0.2.0"  # x-release-please-version
 
   # ---------- Global Variables ----------
   readonly COLOR_GREEN='\033[38;5;2m'
