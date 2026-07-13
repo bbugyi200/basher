@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from basher import __version__
 from basher.engine import (
     BUGYI_SOURCE,
     BasherError,
@@ -86,8 +87,9 @@ def test_update_migrates_legacy_library_and_skips_legacy_script(tmp_path: Path) 
     result = update_project(project)
 
     assert not old_library.exists()
-    assert (library_dir / "bugyi-0.1.0.sh").is_file()
-    assert "bugyi-0.1.0.sh" in reference.read_text()
+    current_name = f"bugyi-{__version__}.sh"
+    assert (library_dir / current_name).is_file()
+    assert current_name in reference.read_text()
     assert legacy_script.is_file()
     assert any("re-vendor manually" in warning for warning in result.warnings)
 
@@ -163,7 +165,7 @@ def test_export_is_unversioned_idempotent_and_has_provenance(tmp_path: Path) -> 
     assert (
         exported.read_text()
         .splitlines()[1]
-        .startswith(f"# Vendored by basher v0.1.0 from {BUGYI_SOURCE}")
+        .startswith(f"# Vendored by basher v{__version__} from {BUGYI_SOURCE}")
     )
     assert "BUGYI_VERSION" in exported.read_text()
 
